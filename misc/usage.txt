@@ -1,0 +1,17 @@
+Create an issue:
+
+    curl -X POST -d@issue.json -H 'Content-Type: application/json' http://localhost:7777/issues
+
+List issue(s):
+
+    curl http://localhost:7777/issues
+    curl http://localhost:7777/issues/1
+
+Update an issue:
+
+    curl -X PUT -d@issue.json -H 'Content-Type: application/json' http://localhost:7777/issues/1
+
+Delete an issue:
+
+    curl -X DELETE http://localhost:7777/issues/1
+
