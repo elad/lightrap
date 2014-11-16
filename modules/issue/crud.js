@@ -33,7 +33,7 @@ function crud_read(req, res) {
 	return async.series({
 		records: function (callback) {
 			if (req.params.issue_id) {
-				return core.get(req, req.params.issue_id, function (err, record) {
+				return core.get(req, Number(req.params.issue_id), function (err, record) {
 					return callback(err, record);
 				});
 			} else {
@@ -57,7 +57,7 @@ function crud_update(req, res) {
 		return;
 	}
 
-	return core.update(req, req.params.issue_id, doc, function (err, doc) {
+	return core.update(req, Number(req.params.issue_id), doc, function (err, doc) {
 		return err ? res.status(err.code).send(err) : res.send(doc);
 	});
 }
@@ -65,7 +65,7 @@ function crud_update(req, res) {
 function crud_delete(req, res) {
 	req.log({ message: 'Issue delete request', issue_id: req.params.issue_id });
 
-	return core.delete(req, req.params.issue_id, true, function (err, doc) {
+	return core.delete(req, Number(req.params.issue_id), true, function (err, doc) {
 		return err ? res.status(err.code).send(err) : res.status(204).end();
 	});
 }

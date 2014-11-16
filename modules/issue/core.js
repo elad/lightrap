@@ -63,7 +63,7 @@ function update(req, id, doc, callback) {
 		doc.deleted_on = null;
 		doc = _.extend(existing_doc, doc);
 
-		return req.db.get('issues').findAndModify({ _id: data._id }, doc, { new: true }, function (err, doc) {
+		return req.db.get('issues').findAndModify({ _id: doc._id }, doc, { new: true }, function (err, doc) {
 			if (err) {
 				req.log({ message: 'issue::update: findAndModify failed', id: id, err: err });
 				err = { code: 500, message: 'Internal error' };
