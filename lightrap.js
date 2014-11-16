@@ -50,6 +50,7 @@ if (cluster.isMaster) {
 			var counters = db.get('counters');
 			counters.insert({ collection: 'issues', seq: 0 });
 
+			// See https://github.com/Automattic/monk/issues/72
 			db.get('issues').id = function (s) { return s; };
 
 			return callback(null);
@@ -59,14 +60,15 @@ if (cluster.isMaster) {
 			var app = express();
 
 			// Middleware
-			app.use(function (req, res, next) { req.lowlevel = true; next(); });
+			app.use(function (req, res, next) {
+				res.header('Access-Control-Allow-Origin', '*');
+				next();
+			});
 			app.use(middleware.domain);
 			app.use(middleware.logger);
 			app.use(body_parser.urlencoded({ extended: true }));
 			app.use(body_parser.json());
 			app.use(function (req, res, next) {
-				req.lowlevel = false;
-
 				// Attach database.
 				req.db = db;
 				req.db_id = get_auto_increment_id.bind(null, req);
