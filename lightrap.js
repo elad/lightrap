@@ -66,7 +66,12 @@ if (cluster.isMaster) {
 			});
 			app.use(middleware.domain);
 			app.use(middleware.logger);
-			app.use(body_parser.urlencoded({ extended: true }));
+			app.use(body_parser.urlencoded({
+				extended: true,
+				verify: function (req, res, body) {
+					req.rawBody = body.toString();
+				}
+			}));
 			app.use(body_parser.json());
 			app.use(function (req, res, next) {
 				// Attach database.

@@ -1,6 +1,13 @@
 Create an issue:
 
+    JSON:
     curl -X POST -d@issue.json -H 'Content-Type: application/json' http://localhost:7777/issues
+
+    Raw PR:
+    curl -X POST --data-binary @pr.txt 'http://localhost:7777/issues?format=gnats.text'
+
+    send-pr:
+    curl -X POST --data-binary @pr.mail 'http://localhost:7777/issues?format=gnats.mail'
 
 List issue(s):
 

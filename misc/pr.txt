@@ -1,0 +1,123 @@
+>Number:         31337
+>Category:       pkg
+>Synopsis:       `make install' fails when WRKOBJDIR is symblic link
+>Confidential:   no
+>Severity:       serious
+>Priority:       high
+>Responsible:    jmmv
+>State:          closed
+>Class:          sw-bug
+>Submitter-Id:   net
+>Arrival-Date:   Sun Sep 18 14:00:01 +0000 2005
+>Closed-Date:    Sun Sep 17 11:26:50 +0000 2006
+>Last-Modified:  Sun Sep 17 11:26:50 +0000 2006
+>Originator:     Kouichirou Hiratsuka
+>Release:        NetBSD 3.99.9
+>Organization:
+>Environment:
+System: NetBSD firefly.localdomain 3.99.9 NetBSD 3.99.9 (PBG4) #109: Sun Sep 18 00:57:38 JST 2005 root@firefly.localdomain:/usr/src/sys/arch/macppc/compile/PBG4 macppc
+Architecture: powerpc
+Machine: macppc
+>Description:
+	If the WRKBOJDIR is a symbolic link, some packages fail to
+	install.  I've experienced it in x11/gnome2-control-center
+	and mail/evolution.
+
+# mkdir /usr/tmp
+# echo 'WRKOBJDIR=/usr/tmp' >> /etc/mk.conf
+# cd /usr/pkgsrc/x11/gnome2-control-center
+# make && make install
+
+	This works fine.  But, by changing the WRKOBJDIR to a symbolic
+	link, it can't be installed.
+
+# make deinstall; make clean
+# rm -fr /usr/tmp
+# ln -s /tmp /usr/tmp
+# make && make install
+[snip]
+cc -shared  .libs/themus-properties-view.o .libs/themus-properties-main.o -Wl,--whole-archive ../../capplets/common/.libs/libcommon.a -Wl,--no-whole-archive  -Wl,--rpath -Wl,/usr/tmp/x11/gnome2-control-center/work/.buildlink/lib -Wl,--rpath -Wl,/usr/pkg/lib -L/usr/tmp/x11/gnome2-control-center/work/.buildlink/lib -L/usr/tmp/x11/gnome2-control-center/work/.x11-buildlink/lib -lnautilus-extension -L/tmp/x11/gnome2-control-center/work/control-center-2.10.2/capplets/common/.libs -L/usr/pkg/lib -lgnome-window-settings -lglade-2.0 -lgnome-menu -lmetacity-private -lXrandr -lXext -lXinerama -lXrender -lgnome-desktop-2 -lgnomeui-2 -lgnome-keyring -ljpeg -lstartup-notification-1 -lbonoboui-2 -lSM -lICE -lX11 -lgnomecanvas-2 -lgnome-2 -lesd -lossaudio -laudiofile -lart_lgpl_2 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lpangoxft-1.0 -lpangox-1.0 -lpangoft2-1.0 -lpango-1.0 -lgnomevfs-2 -lxml2 -lgnutls -ltasn1 -lgcrypt -lgpg-error -lz -lrt -lbonobo-2 -lgconf-2 -lbonobo-activati
+ on -lORBitCosNaming-2 -lORBit-2 -lpopt -lgobject-2.0 -lm -lgmodule-2.0 -lgthread-2.0 -lglib-2.0 -lintl  -Wl,-R/usr/pkg/lib -Wl,-R/usr/pkg/xorg/lib -pthread -Wl,-soname -Wl,libnautilus-themus.so -Wl,-retain-symbols-file -Wl,.libs/libnautilus-themus.exp -o .libs/libnautilus-themus.so
+ld: cannot find -lgnome-window-settings
+libtool: install: error: relink `libnautilus-themus.la' with the above command before installing it
+gmake[3]: *** [install-nautilusLTLIBRARIES] Error 1
+gmake[3]: Leaving directory `/tmp/x11/gnome2-control-center/work/control-center-2.10.2/vfs-methods/themus'
+gmake[2]: *** [install-am] Error 2
+gmake[2]: Leaving directory `/tmp/x11/gnome2-control-center/work/control-center-2.10.2/vfs-methods/themus'
+gmake[1]: *** [install-recursive] Error 1
+gmake[1]: Leaving directory `/tmp/x11/gnome2-control-center/work/control-center-2.10.2/vfs-methods'
+gmake: *** [install-recursive] Error 1
+*** Error code 2
+
+Stop.
+make: stopped in /usr/pkgsrc/x11/gnome2-control-center
+*** Error code 1
+
+Stop.
+make: stopped in /usr/pkgsrc/x11/gnome2-control-center
+*** Error code 1
+
+Stop.
+make: stopped in /usr/pkgsrc/x11/gnome2-control-center
+*** Error code 1
+
+Stop.
+make: stopped in /usr/pkgsrc/x11/gnome2-control-center
+#
+
+>How-To-Repeat:
+	rm -fr /usr/tmp
+	echo 'WRKOBJDIR=/usr/tmp' >> /etc/mk.conf
+	ln -s /tmp /usr/tmp
+	cd ${PKGSRCDIR}/x11/gnome2-control-center && make && make install
+	cd ${PKGSRCDIR}/mail/evolution && make && make install
+
+>Fix:
+	Sorry, I don't know.
+
+>Release-Note:
+
+>Audit-Trail:
+
+Responsible-Changed-From-To: pkg-manager->jmmv
+Responsible-Changed-By: wiz@netbsd.org
+Responsible-Changed-When: Mon, 24 Oct 2005 09:33:32 +0000
+Responsible-Changed-Why:
+Affected packages are gnome ones -- jmmv, could you please take a look?
+
+
+From: Kouichirou Hiratsuka <hira@netbsd.org>
+To: gnats-bugs@netbsd.org
+Cc: 
+Subject: PR/31337 CVS commit: pkgsrc/mk/buildlink3
+Date: Fri,  9 Dec 2005 16:16:41 +0000 (UTC)
+
+ Module Name:	pkgsrc
+ Committed By:	hira
+ Date:		Fri Dec  9 16:16:41 UTC 2005
+
+ Modified Files:
+ 	pkgsrc/mk/buildlink3: bsd.buildlink3.mk libtool-fix-la
+
+ Log Message:
+ Fix build of the packages which pass .la files to libtool by relative
+ path.  This allows to use symbolic linked path as WRKOBJDIR and should
+ fix PR pkg/31337.
+
+
+ To generate a diff of this commit:
+ cvs rdiff -r1.171 -r1.172 pkgsrc/mk/buildlink3/bsd.buildlink3.mk
+ cvs rdiff -r1.6 -r1.7 pkgsrc/mk/buildlink3/libtool-fix-la
+
+ Please note that diffs are not public domain; they are subject to the
+ copyright notices on the relevant files.
+
+State-Changed-From-To: open->closed
+State-Changed-By: jmmv@netbsd.org
+State-Changed-When: Sun, 17 Sep 2006 11:26:50 +0000
+State-Changed-Why:
+Fixed by hira@ (submitter) a long while ago.
+
+
+>Unformatted:
+

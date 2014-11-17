@@ -1,10 +1,11 @@
 var async = require('async'),
+    gnats = require('gnats'),
+    mailparser = new (require('mailparser').MailParser)(),
     schema = require('./schema'),
     core = require('./core');
 
-function crud_validate(req, res) {
-	var doc = req.body,
-	    result = schema.validate(doc);
+function crud_validate(req, doc, res) {
+	var result = schema.validate(doc);
 	if (!result.valid) {
 		req.log({ errors: result.errors, message: 'Invalid record' });
 		res.status(400).send({ code: 400, message: 'Invalid record', errors: result.errors });
@@ -14,16 +15,49 @@ function crud_validate(req, res) {
 	}
 }
 
+function pr_to_issue(pr) {
+	return {
+		synopsis: pr.synopsis,
+		state: pr.state,
+		hidden: pr.confidential === 'yes'
+	};
+}
+
 function crud_create(req, res) {
 	req.log({ message: 'Issue create request' });
 
-	var doc = crud_validate(req, res);
-	if (!doc) {
-		return;
-	}
+	return async.series({
+		doc: function (callback) {
+			if (!req.query.format || req.query.format === 'json') {
+				return callback(null, req.body);
+			} else if (req.query.format === 'gnats.text') {
+				var pr = gnats.parse(req.rawBody);
+				return callback(null, pr_to_issue(pr));
+			} else if (req.query.format === 'gnats.mail') {
+				mailparser.on('end', function (mail_object) {
+					var pr = gnats.parse(mail_object.text);
+					pr.headers = mail_object.headers;
+					return callback(null, pr_to_issue(pr));
+				});
+				mailparser.write(req.rawBody);
+				return mailparser.end();
+			} else {
+				return callback({ code: 400, message: 'invalid format: ' + req.query.format });
+			}
+		}
+	}, function (err, results) {
+		if (err) {
+			return res.status(err.code).send(err);
+		}
 
-	return core.create(req, doc, function (err, doc) {
-		return err ? res.status(err.code).send(err) : res.send(doc);
+		var doc = crud_validate(req, results.doc, res);
+		if (!doc) {
+			return;
+		}
+
+		return core.create(req, doc, function (err, doc) {
+			return err ? res.status(err.code).send(err) : res.send(doc);
+		});
 	});
 }
 
@@ -52,7 +86,7 @@ function crud_read(req, res) {
 function crud_update(req, res) {
 	req.log({ message: 'Issue update request', issue_id: req.params.issue_id });
 
-	var doc = crud_validate(req, res);
+	var doc = crud_validate(req, req.body, res);
 	if (!doc) {
 		return;
 	}
