@@ -18,4 +18,6 @@ npm install
 ./lightrap
 ```
 
+# License
 
+ISC.
