@@ -4,7 +4,7 @@ Lightrap is an experimental bug tracker. It has an API-first design (exposes a R
 
 Example plugins:
 
-  * GNATS handling for incoming PRs
+  * [GNATS](http://www.gnu.org/software/gnats/) handling for incoming PRs
   * Mention support with cross-project notifications
 
 # Setup
