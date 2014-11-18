@@ -21,7 +21,10 @@ if (cluster.isMaster) {
 		spawn(i);
 	}
 } else {
-	var express = require('express'),
+	var fs = require('fs'),
+	    path = require('path'),
+	    _ = require('underscore'),
+	    express = require('express'),
 	    body_parser = require('body-parser'),
 	    monk = require('monk'),
 	    async = require('async'),
@@ -45,7 +48,28 @@ if (cluster.isMaster) {
 		});
 	}
 
+	var plugins = { hooks: {} };
 	async.series([
+		function load_plugins(callback) {
+			var plugin_root = './plugins',
+			    plugins_dirs = fs.readdirSync(plugin_root);
+			_.each(plugins_dirs, function (plugin_dir) {
+				var plugin = require(path.join(plugin_root, plugin_dir));
+
+				if (plugin.hooks) {
+					_.each(plugin.hooks, function (fn, hook) {
+						if (!plugins.hooks.hasOwnProperty(hook)) {
+							plugins.hooks[hook] = [];
+						}
+
+						plugins.hooks[hook].push({ plugin: plugin_dir, fn: fn });
+					});
+				}
+			});
+
+			return callback();
+		},
+
 		function initialize(callback) {
 			var counters = db.get('counters');
 			counters.insert({ collection: 'issues', seq: 0 });
@@ -77,6 +101,9 @@ if (cluster.isMaster) {
 				// Attach database.
 				req.db = db;
 				req.db_id = get_auto_increment_id.bind(null, req);
+
+				// Attach plugins.
+				req.plugins = plugins;
 
 				next();
 			});

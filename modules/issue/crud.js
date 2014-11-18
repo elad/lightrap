@@ -1,6 +1,4 @@
 var async = require('async'),
-    gnats = require('gnats'),
-    mailparser = new (require('mailparser').MailParser)(),
     schema = require('./schema'),
     core = require('./core');
 
@@ -15,47 +13,31 @@ function crud_validate(req, doc, res) {
 	}
 }
 
-function pr_to_issue(pr) {
-	return {
-		synopsis: pr.synopsis,
-		state: pr.state,
-		hidden: pr.confidential === 'yes'
-	};
-}
-
 function crud_create(req, res) {
 	req.log({ message: 'Issue create request' });
 
-	return async.series({
-		doc: function (callback) {
-			if (!req.query.format || req.query.format === 'json') {
-				return callback(null, req.body);
-			} else if (req.query.format === 'gnats.text') {
-				var pr = gnats.parse(req.rawBody);
-				return callback(null, pr_to_issue(pr));
-			} else if (req.query.format === 'gnats.mail') {
-				mailparser.on('end', function (mail_object) {
-					var pr = gnats.parse(mail_object.text);
-					pr.headers = mail_object.headers;
-					return callback(null, pr_to_issue(pr));
-				});
-				mailparser.write(req.rawBody);
-				return mailparser.end();
-			} else {
-				return callback({ code: 400, message: 'invalid format: ' + req.query.format });
+	return async.series([
+		function create_raw(callback) {
+			return async.each(req.plugins.hooks.create_raw || [], function (hook, callback) {
+				hook.fn(req, res, callback);
+			}, callback);
+		},
+
+		function create(callback) {
+			if (!crud_validate(req, req.body, res)) {
+				return;
 			}
+
+			return async.each(req.plugins.hooks.create || [], function (hook, callback) {
+				hook.fn(req, res, callback);
+			}, callback);
 		}
-	}, function (err, results) {
+	], function (err) {
 		if (err) {
 			return res.status(err.code).send(err);
 		}
 
-		var doc = crud_validate(req, results.doc, res);
-		if (!doc) {
-			return;
-		}
-
-		return core.create(req, doc, function (err, doc) {
+		return core.create(req, req.body, function (err, doc) {
 			return err ? res.status(err.code).send(err) : res.send(doc);
 		});
 	});
@@ -91,8 +73,16 @@ function crud_update(req, res) {
 		return;
 	}
 
-	return core.update(req, Number(req.params.issue_id), doc, function (err, doc) {
-		return err ? res.status(err.code).send(err) : res.send(doc);
+	return async.each(req.plugins.hooks.update || [], function (hook, callback) {
+		hook.fn(req, res, callback);
+	}, function (err) {
+		if (err) {
+			return res.status(err.code).send(err);
+		}
+
+		return core.update(req, Number(req.params.issue_id), doc, function (err, doc) {
+			return err ? res.status(err.code).send(err) : res.send(doc);
+		});
 	});
 }
 

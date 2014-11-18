@@ -31,6 +31,10 @@ var schema = {
 			type: 'string',
 			enum: ['open', 'closed']
 		},
+		description: {
+			description: 'description',
+			type: 'string'
+		},
 		hidden: {
 			description: 'hidden flag',
 			type: 'boolean',

@@ -1,4 +1,5 @@
 {
 	"synopsis": "this is a test issue",
-	"state": "open"
+	"state": "open",
+	"description": "this is a test@ mention of someone@somewhere's patch to whatever by @whomever"
 }
