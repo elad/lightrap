@@ -1,7 +1,7 @@
 {
   "name": "lightrap",
   "version": "0.0.1",
-  "description": "experimental bug tracker",
+  "description": "Experimental Node.js bug and issue tracker with API-first design and plugins",
   "main": "lightrap.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
