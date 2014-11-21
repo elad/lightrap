@@ -1,6 +1,6 @@
 # Lightrap
 
-Lightrap is an experimental bug tracker. It has an API-first design (exposes a RESTful interface) and plugins inspired by [Haraka](https://haraka.github.io/).
+Lightrap is an experimental Node.js bug and issue tracker. It has an API-first design (exposes a RESTful interface) and plugins inspired by [Haraka](https://haraka.github.io/).
 
 Example plugins:
 
