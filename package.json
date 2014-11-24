@@ -1,6 +1,6 @@
 {
   "name": "lightrap",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Experimental Node.js bug and issue tracker with API-first design and plugins",
   "main": "lightrap.js",
   "scripts": {
