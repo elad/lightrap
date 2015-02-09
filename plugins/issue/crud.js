@@ -17,6 +17,27 @@ function crud_create(req, res) {
 	req.log({ message: 'Issue create request' });
 
 	return async.series([
+		function (callback) {
+			return req.plugins.hook('create_raw', callback);
+		},
+		function (callback) {
+			if (!crud_validate(req, req.body, res)) {
+				return;
+			}
+
+			return req.plugins.hook('create', callback);
+		}
+	], function (err) {
+		if (err) {
+			return res.status(err.code).send(err);
+		}
+
+		return core.create(req, req.body, function (err, doc) {
+			return err ? res.status(err.code).send(err) : res.send(doc);
+		});
+	});
+
+	/*return async.series([
 		function create_raw(callback) {
 			return async.each(req.plugins.hooks.create_raw || [], function (hook, callback) {
 				hook.fn(req, res, callback);
@@ -40,7 +61,7 @@ function crud_create(req, res) {
 		return core.create(req, req.body, function (err, doc) {
 			return err ? res.status(err.code).send(err) : res.send(doc);
 		});
-	});
+	});*/
 }
 
 function crud_read(req, res) {

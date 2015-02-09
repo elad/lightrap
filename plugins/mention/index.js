@@ -9,7 +9,7 @@ var default_domain = 'netbsd.org',
 
 var mention_regex = /(([a-z0-9]+)?@([a-z0-9.]+)?)[ ']*/gi;
 
-function mention(issue_object) {
+function mention(req, issue_object) {
 	if (!issue_object || !issue_object.description) {
 		return;
 	}
@@ -31,19 +31,19 @@ function mention(issue_object) {
 		if (mention[2]) {
 			var domain = cross_project_mentions[mention[2]];
 			if (!domain) {
-				console.log('WARNING: mention: don\'t know how to send email to', mention[0]);
+				req.log({ message: '[mention] WARNING: No target', mention: mention[0] });
 				return;
 			}
 		} else {
 			domain = default_domain;
 		}
 		var email = mention[1] + '@' + domain;
-		console.log(mention[0], '->', email);
+		req.log({ message: 'Notifying', mention: mention[0], target: email });
 	});
 }
 
 function hook_create(req, res, next) {
-	mention(req.body);
+	mention(req, req.body);
 	return next();
 }
 

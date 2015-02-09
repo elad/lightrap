@@ -17,6 +17,7 @@ List issue(s):
 Update an issue:
 
     curl -X PUT -d@issue.json -H 'Content-Type: application/json' http://localhost:7777/issues/1
+    curl -X PUT -d state=closed http://localhost:7777/issues/1
 
 Delete an issue:
 

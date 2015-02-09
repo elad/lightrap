@@ -28,6 +28,7 @@ if (cluster.isMaster) {
 	    body_parser = require('body-parser'),
 	    monk = require('monk'),
 	    async = require('async'),
+	    orm = require('orm'),
 	    middleware = require('middleware');
 
 	var db = monk('localhost/lightrap');
@@ -35,20 +36,23 @@ if (cluster.isMaster) {
 		throw new Error('Could not connect to database.');
 	}
 
-	// Auto-incrementing sequence field.
-	// From http://docs.mongodb.org/manual/tutorial/create-an-auto-incrementing-field/
-	function get_auto_increment_id(req, collection, callback) {
-		return db.get('counters').findAndModify({ collection: collection }, { $inc: { seq: 1 } }, { upsert: true, new: true }, function (err, doc) {
-			if (err) {
-				req.log({ message: 'get_auto_increment_id: findAndModify failed', err: err, collection: collection });
-				err = { code: 500, message: 'Internal error' };
-			}
-
-			callback(err, doc ? doc.seq : null);
-		});
-	}
-
 	var plugins = { hooks: {} };
+
+	// Hook context for non-request hooks.
+	var logger = middleware.get_logger(),
+	    default_context = {
+		db: db,
+		log: logger
+	};
+	var hook = function(hook_name, context, args, callback) {
+		context = context || default_context;
+		args = args || [];
+		args.push(callback);
+		return async.each(plugins.hooks[hook_name] || [], function (hook, callback) {
+			hook.fn.apply(context, args);
+		}, callback);
+	};
+
 	async.series([
 		function load_plugins(callback) {
 			var plugin_root = './plugins',
@@ -71,13 +75,13 @@ if (cluster.isMaster) {
 		},
 
 		function initialize(callback) {
-			var counters = db.get('counters');
-			counters.insert({ collection: 'issues', seq: 0 });
+			var config = {
+				orm_models: middleware.orm_models
+			};
+			hook('init', null, [config]);
+			hook('orm_models', null, [middleware.orm_models]);
 
-			// See https://github.com/Automattic/monk/issues/72
-			db.get('issues').id = function (s) { return s; };
-
-			return callback(null);
+			return callback();
 		},
 
 		function start_app(callback) {
@@ -97,30 +101,29 @@ if (cluster.isMaster) {
 				}
 			}));
 			app.use(body_parser.json());
+			app.use(orm.express('mongodb://localhost/lightrap', middleware.orm));
 			app.use(function (req, res, next) {
 				// Attach database.
 				req.db = db;
-				req.db_id = get_auto_increment_id.bind(null, req);
 
 				// Attach plugins.
 				req.plugins = plugins;
+				req.plugins.hook = function(hook_name, callback) {
+					return async.each(req.plugins.hooks[hook_name] || [], function (hook, callback) {
+						hook.fn.call(req, req, res, callback);
+					}, callback);
+				};
 
 				next();
 			});
 
-			// Modules.
-			var modules = [
-				'issue',
-			];
-			for (var i = 0, _len = modules.length; i < _len; i++) {
-				require('modules/' + modules[i]).route(app);
-			}
+			hook('route', null, [app]);
 
 			app.use(middleware.error_handler);
 
 			var port = parseInt(process.argv[2]) || 7777,
 			    server = app.listen(port, function () {
-				console.log('listening on port', server.address().port);
+			    	logger({ message: '[lightrap] Listening', port: server.address().port });
 			});
 		},
 	]);

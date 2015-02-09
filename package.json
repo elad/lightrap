@@ -27,9 +27,10 @@
     "express": "^4.10.2",
     "gnats": "^0.0.3",
     "mailparser": "^0.4.6",
-    "monk": "^0.9.0",
     "node-uuid": "^1.4.1",
     "revalidator": "^0.3.0",
-    "underscore": "^1.7.0"
+    "underscore": "^1.7.0",
+    "orm": "^2.1.20",
+    "mongodb": "^1.4.28"
   }
 }
