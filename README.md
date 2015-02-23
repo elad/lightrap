@@ -25,3 +25,8 @@ npm install
 # License
 
 ISC.
+
+# TODO
+
+* Use [c9/architect](https://github.com/c9/architect) instead of rolling our own plugin framework
+* Use [balderdashy/waterline](https://github.com/balderdashy/waterline) instead of node-orm2
