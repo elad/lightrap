@@ -29,4 +29,4 @@ ISC.
 # TODO
 
 * Use [c9/architect](https://github.com/c9/architect) instead of rolling our own plugin framework
-* Use [balderdashy/waterline](https://github.com/balderdashy/waterline) instead of node-orm2
+* Use [balderdashy/waterline](https://github.com/balderdashy/waterline) instead of [node-orm2](https://github.com/dresende/node-orm2)
